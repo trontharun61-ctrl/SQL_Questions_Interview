@@ -1357,6 +1357,25 @@ ORDER BY days_since_prev;
 -- Q35: Rolling 6-month average rental count per category
 -- Q36: YoY % change in rentals per store, find highest growth
 -- Q37: MoM change in revenue per staff
+WITH staff_revenue as 
+(
+    SELECT
+        p.staff_id,
+        strftime('%Y-%m', p.payment_date) as payment_year_month,
+        sum(p.amount) as revenue
+    FROM payment p 
+    JOIN staff st 
+        ON p.staff_id = st.staff_id
+    GROUP BY p.staff_id, strftime('%Y-%m', p.payment_date)
+)
+
+SELECT 
+    staff_id,
+    payment_year_month,
+    revenue,
+    LAG(revenue) OVER (PARTITION BY staff_id ORDER BY payment_year_month) as prev_mon_revenue,
+    COALESCE((revenue - LAG(revenue) OVER (PARTITION BY staff_id ORDER BY payment_year_month)),0) as mom_change
+FROM staff_revenue
 -- Q38: YoY change in average rental duration per category
 -- Q39: Monthly rental comparison across years, biggest drop
 -- Q40: Customer spending difference compared to previous year
@@ -1390,6 +1409,8 @@ ORDER BY days_since_prev;
 -- Q44: Customers renting more in last 6 months than previous 6 months
 -- Q45: Store with highest % unique customers renting only once
 -- Q47: Top 3 customers per store by total rental payments
+
+
 
 -- Q72: Time difference (days) between each rental for a customer
 SELECT 
